@@ -1,10 +1,11 @@
 [package]
-name = "rnetcat"
+name = "ripsbench"
 version = "0.1.0"
 authors = ["Linus Färnstrand <faern@faern.net>"]
+description = "Benchmarkning of rips, the Rust userspace IP network stack"
 
 [[bin]]
-name = "rnc"
+name = "ripsbench"
 
 [dependencies]
 clap = "^2"
@@ -18,6 +19,9 @@ git = "https://github.com/faern/libpnet"
 #path = "../libpnet"
 
 [dependencies.rips]
-#git = "https://github.com/faern/librips"
-path = "../librips"
+#git = "https://github.com/faern/rips"
+path = "../rips"
 
+
+[profile.release]
+debug = true
