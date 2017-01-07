@@ -10,7 +10,7 @@ name = "ripsbench"
 [dependencies]
 clap = "^2"
 ipnetwork = "0.10.0"
-pnet = "0.15.0"
+pnet = "0.15"
 lazy_static = "^0.2"
 
 #[dependencies.pnet]

@@ -7,7 +7,7 @@ use pnet::datalink::{self, NetworkInterface};
 use rips;
 
 use std::io::Write;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddrV4};
 use std::process;
 use std::str::FromStr;
 
@@ -21,6 +21,24 @@ macro_rules! eprintln {
     )
 }
 
+arg_enum! {
+    #[derive(Debug)]
+    pub enum Size {
+        Min,
+        Mtu,
+        Max
+    }
+}
+
+arg_enum! {
+    #[derive(Debug)]
+    pub enum Protocol {
+        Pnet,
+        Ethernet,
+        Ipv4,
+        Udp
+    }
+}
 
 pub struct ArgumentParser {
     app: clap::App<'static, 'static>,
@@ -41,7 +59,7 @@ impl ArgumentParser {
         let iface_name = self.matches.value_of("iface").unwrap();
         for iface in datalink::interfaces().into_iter() {
             if iface.name == iface_name {
-                if let Ok(rips_iface) = rips::convert_interface(&iface) {
+                if let Ok(rips_iface) = rips::Interface::try_from(&iface) {
                     return (iface, rips_iface);
                 } else {
                     self.print_error(&format!("Interface {} can't be used with rips", iface_name));
@@ -102,17 +120,22 @@ impl ArgumentParser {
         value_t!(matches, "netbuf", usize).unwrap()
     }
 
-    pub fn get_dst(&self) -> SocketAddr {
+    pub fn get_dst(&self) -> SocketAddrV4 {
         let matches = &self.matches;
-        match value_t!(matches, "target", SocketAddr) {
+        match value_t!(matches, "target", SocketAddrV4) {
             Ok(dst) => dst,
             Err(e) => self.print_error(&format!("Invalid target. {}", e)),
         }
     }
 
-    pub fn get_size(&self) -> usize {
+    pub fn get_sizes(&self) -> Vec<Size> {
         let matches = &self.matches;
-        value_t!(matches, "size", usize).unwrap()
+        values_t!(matches, "sizes", Size).unwrap()
+    }
+
+    pub fn get_protocols(&self) -> Vec<Protocol> {
+        let matches = &self.matches;
+        values_t!(matches, "protocols", Protocol).unwrap()
     }
 
     pub fn create_channel(&self) -> rips::EthernetChannel {
@@ -122,7 +145,14 @@ impl ArgumentParser {
         config.write_buffer_size = bufsize;
         config.read_buffer_size = bufsize;
         match datalink::channel(&iface, config) {
-            Ok(datalink::Channel::Ethernet(tx, rx)) => rips::EthernetChannel(tx, rx),
+            Ok(datalink::Channel::Ethernet(tx, rx)) => {
+                rips::EthernetChannel {
+                    sender: tx,
+                    write_buffer_size: bufsize,
+                    receiver: rx,
+                    read_buffer_size: bufsize,
+                }
+            }
             _ => self.print_error(&format!("Unable to open network channel on {}", iface.name)),
         }
     }
@@ -165,11 +195,20 @@ impl ArgumentParser {
             .help("Target to connect to. Given as <ip>:<port>")
             .required(true)
             .index(2);
-        let pkg_size_arg = clap::Arg::with_name("size")
-            .help("Number of bytes to send in each Udp packet.")
-            .long("size")
-            .value_name("SIZE")
-            .default_value("1");
+        let sizes_arg = clap::Arg::with_name("sizes")
+            .help("Configure which package sizes to bench")
+            .long("sizes")
+            .use_delimiter(true)
+            .multiple(true)
+            .value_delimiter(",")
+            .possible_values(&Size::variants())
+            .takes_value(true);
+        let protocols_arg = clap::Arg::with_name("protocols")
+            .help("What benchmark suites to run")
+            .long("protocols")
+            .value_delimiter(",")
+            .multiple(true)
+            .possible_values(&Protocol::variants());
 
         let app = clap::App::new("Netcat in Rust")
             .version(crate_version!())
@@ -182,7 +221,8 @@ impl ArgumentParser {
             .arg(netbuf_arg)
             .arg(iface_arg)
             .arg(dst_arg)
-            .arg(pkg_size_arg);
+            .arg(sizes_arg)
+            .arg(protocols_arg);
 
         app
     }
