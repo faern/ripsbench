@@ -4,13 +4,10 @@ version = "0.1.0"
 authors = ["Linus Färnstrand <faern@faern.net>"]
 description = "Benchmarkning of rips, the Rust userspace IP network stack"
 
-[[bin]]
-name = "ripsbench"
-
 [dependencies]
-clap = "^2"
+clap = "2.20"
+pnet = "0.16.0"
 ipnetwork = "0.10.0"
-pnet = "0.15"
 lazy_static = "^0.2"
 
 #[dependencies.pnet]
@@ -19,8 +16,9 @@ lazy_static = "^0.2"
 #path = "../libpnet"
 
 [dependencies.rips]
-#git = "https://github.com/faern/rips"
-path = "../rips"
+git = "https://github.com/faern/rips"
+branch = "tx-refactor"
+#path = "../rips"
 
 
 #[profile.release]

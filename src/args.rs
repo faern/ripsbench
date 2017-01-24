@@ -210,10 +210,10 @@ impl ArgumentParser {
             .multiple(true)
             .possible_values(&Protocol::variants());
 
-        let app = clap::App::new("Netcat in Rust")
+        let app = clap::App::new(crate_name!())
             .version(crate_version!())
             .author(crate_authors!())
-            .about("A netcat like program using the rips userspace network stack.")
+            .about(crate_description!())
             .arg(src_net_arg)
             .arg(src_port_arg)
             .arg(gw_arg)

@@ -4,8 +4,8 @@ use pnet::packet::ethernet::EtherTypes;
 use pnet::packet::ip::IpNextHeaderProtocols;
 use progress;
 use rips::{self, EthernetChannel, NetworkStack, TxError};
-use rips::BasicPayload;
-use rips::ethernet::{EthernetTx, BasicEthernetPayload};
+use rips::{CustomPayload, Tx};
+use rips::ethernet::{EthernetTx, EthernetFields};
 // use rips::ipv4::{Ipv4Tx, BasicIpv4Payload};
 // use rips::udp::UdpSocket;
 use std::io::Write;
@@ -21,7 +21,8 @@ lazy_static! {
 pub fn bench_ethernet(channel: EthernetChannel, config: &Config) {
     let mut printer = progress::Printer::new();
     let mut stack = create_stack(channel, config);
-    let mut tx = stack.interface(&config.iface).unwrap().ethernet_sender(config.dst_mac);
+    let mut interface = stack.interface(&config.iface).unwrap();
+    let mut tx = interface.ethernet_tx(config.dst_mac);
 
     printer.print_title("Rips Ethernet sending");
     let buffer = vec![0; 1000 * 1500];
@@ -36,16 +37,19 @@ pub fn bench_ethernet(channel: EthernetChannel, config: &Config) {
             let mut next_print_second = 1;
             let timer = Instant::now();
             loop {
-                let payload = BasicPayload::with_packet_size(bytes_per_packet,
-                                                             &buffer[..packets_per_call *
-                                                                       bytes_per_packet]);
-                let eth_payload = BasicEthernetPayload::from_payload(EtherTypes::Ipv4, payload);
-                match tx.send(eth_payload) {
-                    Err(TxError::InvalidTx) => invalid_tx_count += 1,
-                    Err(e) => panic!("Unable to send: {:?}", e),
+                let total_bytes = packets_per_call * bytes_per_packet;
+                let mut payload = CustomPayload::with_packet_size(EthernetFields(EtherTypes::Ipv4),
+                                                                  bytes_per_packet,
+                                                                  &buffer[..total_bytes]);
+                match tx.send(&mut payload) {
+                    None => {
+                        invalid_tx_count += 1;
+                        tx = interface.ethernet_tx(config.dst_mac);
+                    }
+                    Some(Err(e)) => panic!("Unable to send: {:?}", e),
                     _ => {
                         pkgs += packets_per_call;
-                        bytes += packets_per_call * bytes_per_packet;
+                        bytes += total_bytes;
                     }
                 }
 
