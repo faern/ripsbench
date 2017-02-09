@@ -6,19 +6,16 @@ use pnet::datalink::{self, NetworkInterface};
 
 use rips;
 
-use std::io::Write;
 use std::net::{IpAddr, Ipv4Addr, SocketAddrV4};
 use std::process;
 use std::str::FromStr;
 
 
 macro_rules! eprintln {
-    ($($arg:tt)*) => (
-        match writeln!(&mut ::std::io::stderr(), $($arg)* ) {
-            Ok(_) => {},
-            Err(x) => panic!("Unable to write to stderr: {}", x),
-        }
-    )
+    ($($arg:tt)*) => {{
+        use std::io::Write;
+        let _ = writeln!(&mut ::std::io::stderr(), $($arg)* );
+    }}
 }
 
 arg_enum! {

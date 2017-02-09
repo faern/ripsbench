@@ -8,7 +8,6 @@ use rips::{CustomPayload, Tx};
 use rips::ethernet::{EthernetTx, EthernetFields};
 // use rips::ipv4::{Ipv4Tx, BasicIpv4Payload};
 // use rips::udp::UdpSocket;
-use std::io::Write;
 use std::process;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
