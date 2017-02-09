@@ -159,10 +159,8 @@ fn create_stack(channel: EthernetChannel, config: &Config) -> NetworkStack {
     stack.add_interface(config.iface.clone(), channel).unwrap();
     stack.add_ipv4(&config.iface, config.src_net).unwrap();
     {
-        let routing_table = stack.routing_table();
-        routing_table.write()
-            .unwrap()
-            .add_route(*DEFAULT_ROUTE, Some(config.gw), config.iface.clone());
+        let mut routing_table = stack.routing_table();
+        routing_table.add_route(*DEFAULT_ROUTE, Some(config.gw), config.iface.clone());
     }
     stack
 }
