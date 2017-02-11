@@ -6,8 +6,8 @@ use progress;
 use rips::{self, EthernetChannel, NetworkStack, TxError};
 use rips::{CustomPayload, Tx};
 use rips::ethernet::{EthernetTx, EthernetFields};
-// use rips::ipv4::{Ipv4Tx, BasicIpv4Payload};
-// use rips::udp::UdpSocket;
+use rips::ipv4::{Ipv4Tx, Ipv4Fields};
+use rips::udp::UdpSocket;
 use std::process;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
@@ -67,50 +67,51 @@ pub fn bench_ethernet(channel: EthernetChannel, config: &Config) {
     println!("Benchmark resulted in {} InvalidTx", invalid_tx_count);
 }
 
-// pub fn bench_ipv4(channel: EthernetChannel, config: &Config) {
-//     let mut printer = progress::Printer::new();
-//     let mut stack = create_stack(channel, config);
-//     let mut tx = stack.ipv4_tx(*config.dst.ip()).unwrap();
+pub fn bench_ipv4(channel: EthernetChannel, config: &Config) {
+    let mut printer = progress::Printer::new();
+    let mut stack = create_stack(channel, config);
+    let mut tx = stack.ipv4_tx(*config.dst.ip()).unwrap();
 
-//     printer.print_title("Rips IPv4 sending");
+    printer.print_title("Rips IPv4 sending");
 
-//     for bytes_per_packet in packet_sizes(config, Protocol::Ipv4) {
-// printer.print_line_description(&format!("Sending {} bytes per
-// packet", bytes_per_packet));
-//         let buffer = vec![0; bytes_per_packet];
+    for bytes_per_packet in packet_sizes(config, Protocol::Ipv4) {
+        printer.print_line_description(&format!("Sending {} bytes per
+packet",
+                                                bytes_per_packet));
+        let buffer = vec![0; bytes_per_packet];
 
-//         let mut pkgs = 0;
-//         let mut bytes = 0;
-//         let timer = Instant::now();
-//         let mut next_print = 1;
-//         loop {
-// let payload = BasicIpv4Payload::new(IpNextHeaderProtocols::Igmp,
-// &buffer[..]);
-//             match tx.send(payload) {
-//                 Err(TxError::InvalidTx) => {
-//                     tx = stack.ipv4_tx(*config.dst.ip()).unwrap();
-//                 }
-//                 Err(e) => {
-//                     eprintln!("Error while sending to the network: {}", e);
-//                     process::exit(1);
-//                 }
-//                 Ok(_size) => {
-//                     pkgs += 1;
-//                     bytes += bytes_per_packet;
-//                 }
-//             }
-//             let elapsed = timer.elapsed();
-//             if elapsed.as_secs() >= next_print {
-//                 next_print += 1;
-//                 printer.print_statistics(pkgs, bytes, elapsed);
-//             }
-//             if elapsed > config.duration {
-//                 break;
-//             }
-//         }
-//         printer.end_line();
-//     }
-// }
+        let mut pkgs = 0;
+        let mut bytes = 0;
+        let timer = Instant::now();
+        let mut next_print = 1;
+        loop {
+            let mut payload = CustomPayload::new(Ipv4Fields(IpNextHeaderProtocols::Igmp),
+                                                 &buffer[..]);
+            match tx.send(&mut payload) {
+                None => {
+                    tx = stack.ipv4_tx(*config.dst.ip()).unwrap();
+                }
+                Some(Err(e)) => {
+                    eprintln!("Error while sending to the network: {}", e);
+                    process::exit(1);
+                }
+                Some(Ok(_size)) => {
+                    pkgs += 1;
+                    bytes += bytes_per_packet;
+                }
+            }
+            let elapsed = timer.elapsed();
+            if elapsed.as_secs() >= next_print {
+                next_print += 1;
+                printer.print_statistics(pkgs, bytes, elapsed);
+            }
+            if elapsed > config.duration {
+                break;
+            }
+        }
+        printer.end_line();
+    }
+}
 
 // pub fn bench_udp(channel: EthernetChannel, config: &Config) {
 //     let mut printer = progress::Printer::new();
