@@ -3,10 +3,10 @@ use ipnetwork::Ipv4Network;
 use pnet::packet::ethernet::EtherTypes;
 use pnet::packet::ip::IpNextHeaderProtocols;
 use progress;
-use rips::{self, EthernetChannel, NetworkStack, TxError};
+use rips::{self, EthernetChannel, NetworkStack};
 use rips::{CustomPayload, Tx};
-use rips::ethernet::{EthernetTx, EthernetFields};
-use rips::ipv4::{Ipv4Tx, Ipv4Fields};
+use rips::ethernet::EthernetFields;
+use rips::ipv4::Ipv4Fields;
 use rips::udp::UdpSocket;
 use std::process;
 use std::str::FromStr;
@@ -20,7 +20,7 @@ lazy_static! {
 pub fn bench_ethernet(channel: EthernetChannel, config: &Config) {
     let mut printer = progress::Printer::new();
     let mut stack = create_stack(channel, config);
-    let mut interface = stack.interface(&config.iface).unwrap();
+    let interface = stack.interface(&config.iface).unwrap();
     let mut tx = interface.ethernet_tx(config.dst_mac);
 
     printer.print_title("Rips Ethernet sending");
@@ -75,9 +75,7 @@ pub fn bench_ipv4(channel: EthernetChannel, config: &Config) {
     printer.print_title("Rips IPv4 sending");
 
     for bytes_per_packet in packet_sizes(config, Protocol::Ipv4) {
-        printer.print_line_description(&format!("Sending {} bytes per
-packet",
-                                                bytes_per_packet));
+        printer.print_line_description(&format!("Sending {} bytes per packet", bytes_per_packet));
         let buffer = vec![0; bytes_per_packet];
 
         let mut pkgs = 0;
@@ -113,47 +111,46 @@ packet",
     }
 }
 
-// pub fn bench_udp(channel: EthernetChannel, config: &Config) {
-//     let mut printer = progress::Printer::new();
-//     let stack = create_stack(channel, config);
+pub fn bench_udp(channel: EthernetChannel, config: &Config) {
+    let mut printer = progress::Printer::new();
+    let stack = create_stack(channel, config);
 
-//     let stack = Arc::new(Mutex::new(stack));
-//     let mut socket = UdpSocket::bind(stack, config.src).unwrap();
+    let stack = Arc::new(Mutex::new(stack));
+    let mut socket = UdpSocket::bind(stack, config.src).unwrap();
 
-//     printer.print_title("Rips UDP sending");
+    printer.print_title("Rips UDP sending");
 
-//     for bytes_per_packet in packet_sizes(config, Protocol::Udp) {
-// printer.print_line_description(&format!("Sending {} bytes per
-// packet", bytes_per_packet));
-//         let buffer = vec![0; bytes_per_packet];
+    for bytes_per_packet in packet_sizes(config, Protocol::Udp) {
+        printer.print_line_description(&format!("Sending {} bytes per packet", bytes_per_packet));
+        let buffer = vec![0; bytes_per_packet];
 
-//         let mut pkgs = 0;
-//         let mut bytes = 0;
-//         let timer = Instant::now();
-//         let mut next_print = 1;
-//         loop {
-//             match socket.send_to(&buffer, config.dst) {
-//                 Err(e) => {
-//                     eprintln!("Error while sending to the network: {}", e);
-//                     process::exit(1);
-//                 }
-//                 Ok(_size) => {
-//                     pkgs += 1;
-//                     bytes += bytes_per_packet;
-//                 }
-//             }
-//             let elapsed = timer.elapsed();
-//             if elapsed.as_secs() >= next_print {
-//                 next_print += 1;
-//                 printer.print_statistics(pkgs, bytes, elapsed);
-//             }
-//             if elapsed > config.duration {
-//                 break;
-//             }
-//         }
-//         printer.end_line();
-//     }
-// }
+        let mut pkgs = 0;
+        let mut bytes = 0;
+        let timer = Instant::now();
+        let mut next_print = 1;
+        loop {
+            match socket.send_to(&buffer, config.dst) {
+                Err(e) => {
+                    eprintln!("Error while sending to the network: {}", e);
+                    process::exit(1);
+                }
+                Ok(_size) => {
+                    pkgs += 1;
+                    bytes += bytes_per_packet;
+                }
+            }
+            let elapsed = timer.elapsed();
+            if elapsed.as_secs() >= next_print {
+                next_print += 1;
+                printer.print_statistics(pkgs, bytes, elapsed);
+            }
+            if elapsed > config.duration {
+                break;
+            }
+        }
+        printer.end_line();
+    }
+}
 
 fn create_stack(channel: EthernetChannel, config: &Config) -> NetworkStack {
     let mut stack = rips::NetworkStack::new();

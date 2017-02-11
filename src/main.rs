@@ -30,9 +30,7 @@ lazy_static! {
 
     static ref DST_MAC: MacAddr = MacAddr::new(99, 88, 77, 66, 55, 44);
     static ref DST_LAN_IP: Ipv4Addr = Ipv4Addr::new(10, 0, 0, 15);
-    static ref DST_WAN_IP: Ipv4Addr = Ipv4Addr::new(192, 168, 1, 1);
     static ref DST_LAN_SOCKETADDR: SocketAddrV4 = SocketAddrV4::new(*DST_LAN_IP, 8080);
-    static ref DST_WAN_SOCKETADDR: SocketAddrV4 = SocketAddrV4::new(*DST_WAN_IP, 8080);
 }
 
 #[derive(Debug)]
@@ -99,9 +97,8 @@ fn main() {
         match protocol {
             args::Protocol::Pnet => pnet_bench::bench(args.create_channel(), &config),
             args::Protocol::Ethernet => rips_bench::bench_ethernet(args.create_channel(), &config),
-            // args::Protocol::Ipv4 => rips_bench::bench_ipv4(args.create_channel(), &config),
-            // args::Protocol::Udp => rips_bench::bench_udp(args.create_channel(), &config),
-            _ => unimplemented!(),
+            args::Protocol::Ipv4 => rips_bench::bench_ipv4(args.create_channel(), &config),
+            args::Protocol::Udp => rips_bench::bench_udp(args.create_channel(), &config),
         }
     }
 }
