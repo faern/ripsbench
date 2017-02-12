@@ -1,10 +1,9 @@
 use clap;
 
-use ipnetwork::Ipv4Network;
-
 use pnet::datalink::{self, NetworkInterface};
 
 use rips;
+use rips::ipv4::Ipv4Network;
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddrV4};
 use std::process;

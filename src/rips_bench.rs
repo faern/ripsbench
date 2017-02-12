@@ -1,12 +1,11 @@
 use Config;
-use ipnetwork::Ipv4Network;
 use pnet::packet::ethernet::EtherTypes;
 use pnet::packet::ip::IpNextHeaderProtocols;
 use progress;
 use rips::{self, EthernetChannel, NetworkStack};
 use rips::{CustomPayload, Tx};
 use rips::ethernet::EthernetFields;
-use rips::ipv4::Ipv4Fields;
+use rips::ipv4::{Ipv4Fields, Ipv4Network};
 use rips::udp::UdpSocket;
 use std::process;
 use std::str::FromStr;

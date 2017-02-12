@@ -3,7 +3,6 @@ extern crate clap;
 #[macro_use]
 extern crate lazy_static;
 extern crate pnet;
-extern crate ipnetwork;
 extern crate rips;
 
 #[macro_use]
@@ -13,9 +12,9 @@ mod progress;
 mod pnet_bench;
 mod rips_bench;
 
-use ipnetwork::Ipv4Network;
 use rips::Interface;
 use rips::ethernet::MacAddr;
+use rips::ipv4::Ipv4Network;
 use std::net::{SocketAddrV4, Ipv4Addr};
 use std::time::Duration;
 
